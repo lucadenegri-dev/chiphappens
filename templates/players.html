@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h2 class="h4 mb-0"><i class="bi bi-people me-2 text-primary"></i>Giocatori</h2>
+  {% if current_user.is_authenticated %}
+  <a class="btn btn-primary" data-bs-toggle="collapse" href="#addPlayer" role="button" aria-expanded="false" aria-controls="addPlayer">
+    <i class="bi bi-person-plus me-1"></i> Aggiungi
+  </a>
+  {% endif %}
+</div>
+
+{% if current_user.is_authenticated %}
+<div class="collapse mb-3" id="addPlayer">
+  <div class="card card-lift">
+    <div class="card-body">
+      <form method="post" action="{{ url_for('player_new') }}" class="row g-3 align-items-end">
+        {{ form.hidden_tag() }}
+        <div class="col-sm-8">
+          {{ form.name.label(class='form-label') }}
+          {{ form.name(class='form-control', placeholder='Nome') }}
+        </div>
+        <div class="col-sm-4 text-sm-end">
+          {{ form.submit(class='btn btn-success w-100') }}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card card-lift">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 table-stretch">
+        <thead class="table-light-subtle">
+          <tr><th class="w-1">#</th><th>Nome</th><th class="text-end w-1">Azioni</th></tr>
+        </thead>
+        <tbody>
+          {% for p in players %}
+          <tr>
+            <td class="text-body-tertiary">{{ p.id }}</td>
+            <td class="fw-medium">{{ p.name }}</td>
+            <td class="text-end">
+              {% if current_user.is_authenticated %}
+              <form method="post" action="{{ url_for('player_delete', player_id=p.id) }}" class="d-inline" onsubmit="return confirm('Eliminare {{ p.name }}?');">
+                {{ form.csrf_token if form else '' }}
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

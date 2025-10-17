@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h2 class="h4 mb-0"><i class="bi bi-collection me-2 text-primary"></i>Partite</h2>
+  {% if current_user.is_authenticated %}
+  <a class="btn btn-primary" href="{{ url_for('game_new') }}">
+    <i class="bi bi-plus-circle me-1"></i> Nuova partita
+  </a>
+  {% endif %}
+</div>
+
+<div class="card card-lift">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 table-stretch">
+        <thead class="table-light-subtle">
+          <tr>
+            <th>Data</th>
+            <th>Buy-in</th>
+            <th>Entrate</th>
+            <th>Montepremi</th>
+            <th class="text-end">Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in games %}
+          <tr class="row-link" data-href="{{ url_for('game_detail', game_id=g.id) }}">
+            <td>{{ g.date.strftime('%d/%m/%Y') }}</td>
+            <td>€{{ '%.2f'|format(g.buy_in) }}</td>
+            <td>
+              <span class="badge bg-info-subtle text-info-emphasis">
+                {{ g.total_entries }}
+              </span>
+            </td>
+            <td>€{{ '%.2f'|format(g.prize_pool) }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-secondary"
+                 href="{{ url_for('game_detail', game_id=g.id) }}"
+                 title="Dettagli">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% if current_user.is_authenticated %}
+              <form method="post"
+                    action="{{ url_for('game_delete', game_id=g.id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm('Eliminare definitivamente la partita del {{ g.date.strftime('%d/%m/%Y') }}?');"
+                    onclick="event.stopPropagation();">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger" type="submit" title="Elimina">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-center text-body-tertiary py-3">
+              Nessuna partita registrata.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Rende cliccabile la riga (mobile-friendly), ma ignora click su link, bottoni o form
+  document.querySelectorAll('.row-link').forEach(tr => {
+    tr.addEventListener('click', function(e) {
+      if (e.target.closest('a, button, form, .form-control')) return;
+      window.location = this.dataset.href;
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h2 class="h4 mb-0"><i class="bi bi-clipboard2-data me-2 text-primary"></i>Dettaglio partita</h2>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('games') }}"><i class="bi bi-arrow-left"></i> Indietro</a>
+</div>
+{% if current_user.is_authenticated %}
+<form method="post" action="{{ url_for('game_delete', game_id=game.id) }}" class="d-inline"
+      onsubmit="return confirm('Eliminare definitivamente questa partita?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn-danger btn-sm"><i class="bi bi-trash"></i> Elimina</button>
+</form>
+{% endif %}
+
+
+
+<div class="card card-lift mb-3">
+  <div class="card-body d-flex flex-wrap gap-3">
+    <div><span class="text-body-tertiary small">Data</span><div class="fw-medium">{{ game.date.strftime('%d/%m/%Y') }}</div></div>
+    <div><span class="text-body-tertiary small">Buy-in</span><div class="fw-medium">€{{ '%.2f'|format(game.buy_in) }}</div></div>
+    <div><span class="text-body-tertiary small">Entrate totali</span><div class="fw-medium">{{ game.total_entries }}</div></div>
+    <div><span class="text-body-tertiary small">Montepremi</span><div class="fw-medium">€{{ '%.2f'|format(game.prize_pool) }}</div></div>
+  </div>
+</div>
+
+<div class="card card-lift">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 table-stretch">
+        <thead class="table-light-subtle">
+          <tr><th>Pos</th><th>Giocatore</th><th>Rebuy</th><th>Punti</th><th class="text-end">Bilancio €</th></tr>
+        </thead>
+        <tbody>
+          {% for r in results %}
+          <tr>
+            <td class="fw-medium">{{ r.finish }}</td>
+            <td>{{ r.player.name }}</td>
+            <td>{{ r.rebuys }}</td>
+            <td><span class="badge bg-primary-subtle text-primary-emphasis">{{ r.points }}</span></td>
+            <td class="text-end {{ 'text-success' if r.cash_delta>=0 else 'text-danger' }}">{{ '%.2f'|format(r.cash_delta) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

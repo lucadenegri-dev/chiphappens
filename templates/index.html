@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-6">
+    <div class="card card-lift">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2 class="h5 mb-0"><i class="bi bi-trophy text-primary me-2"></i>Classifica generale</h2>
+        <span class="text-body-tertiary small">Punti & Bilanci</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-stretch align-middle mb-0">
+            <thead class="table-light-subtle">
+              <tr>
+                <th class="w-1">#</th>
+                <th>Giocatore</th>
+                <th class="text-end">Punti</th>
+                <th class="text-end">Bilancio €</th>
+                <th class="text-end">Partite</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for row in standings %}
+              <tr>
+                <td class="text-body-tertiary">{{ loop.index }}</td>
+                <td class="fw-medium">{{ row.player.name }}</td>
+                <td class="text-end"><span class="badge bg-primary-subtle text-primary-emphasis">{{ row.points }}</span></td>
+                <td class="text-end {{ 'text-success' if row.cash>=0 else 'text-danger' }}">{{ '%.2f'|format(row.cash) }}</td>
+                <td class="text-end">{{ row.games }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card card-lift">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h2 class="h5 mb-0"><i class="bi bi-clock-history text-primary me-2"></i>Ultime partite</h2>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('games') }}"><i class="bi bi-collection me-1"></i>Tutte</a>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for g in games %}
+        <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" href="{{ url_for('game_detail', game_id=g.id) }}">
+          <div class="d-flex flex-column">
+            <span class="fw-medium">{{ g.date.strftime('%d/%m/%Y') }}</span>
+            <small class="text-body-tertiary">Entrate: {{ g.total_entries }}</small>
+          </div>
+          <div class="text-end">
+            <div class="small text-body-tertiary">Buy-in</div>
+            <div class="fw-medium">€{{ '%.2f'|format(g.buy_in) }}</div>
+            <div class="small text-body-tertiary">Montepremi: €{{ '%.2f'|format(g.prize_pool) }}</div>
+          </div>
+        </a>
+        {% else %}
+          <div class="list-group-item">Nessuna partita ancora.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

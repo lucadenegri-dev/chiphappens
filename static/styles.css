@@ -1,0 +1,80 @@
+/* ===== Light theme (fixed) ===== */
+:root {
+  --bg: #f8f9fa;
+  --card: #ffffff;
+  --border: #e9ecef;
+  --text: #212529;
+  --muted: #6c757d;
+  --primary: #0d6efd;
+  --shadow: 0 8px 24px rgba(0,0,0,.07);
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.navbar, .bg-body, .bg-white, .bg-body-tertiary {
+  background: #fff !important;
+}
+.navbar .nav-link { color: var(--text); }
+.navbar .nav-link:hover { color: var(--primary); }
+
+.card {
+  background: var(--card);
+  border-color: var(--border);
+}
+.card-lift {
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.card-lift:hover { transform: translateY(-2px); }
+
+.table-stretch th, .table-stretch td {
+  padding: .9rem .9rem;
+}
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.06);
+}
+
+.list-group-item {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+/* Flash container spacing */
+.toast-container { width: min(720px, 92vw); }
+
+/* Scrollbar subtle */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: #8aa1; }
+
+/* Buttons & inputs focus ring */
+.btn:focus, .form-control:focus {
+  box-shadow: 0 0 0 .14rem rgba(13,110,253,.35) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Draggable handle */
+#orderList .handle {
+  cursor: grab;
+  user-select: none;
+}
+
+/* Better spacing on mobile */
+@media (max-width: 576px) {
+  .navbar .btn { padding: .25rem .5rem; }
+  .table-responsive { border-radius: .5rem; }
+}
+
+/* Utility (subtle badges) */
+.text-body-tertiary { color: var(--muted) !important; }
+.bg-primary-subtle { background: rgba(13,110,253,.12) !important; }
+.text-primary-emphasis { color: var(--primary) !important; }
+.bg-info-subtle { background: rgba(13,202,240,.12) !important; }
+.text-info-emphasis { color: #0dcaf0 !important; }
+.bg-secondary-subtle { background: rgba(108,117,125,.15) !important; }
+.text-secondary-emphasis { color: var(--muted) !important; }
