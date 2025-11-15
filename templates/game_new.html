@@ -30,6 +30,11 @@
               <span class="input-group-text">Rebuy</span>
               <input type="number" class="form-control" name="rebuy_{{pid}}" value="0" min="0" step="1">
             </div>
+            <!-- NUOVO: campo per la vincita manuale -->
+            <div class="input-group input-group-sm mt-1">
+              <span class="input-group-text">Vincita €</span>
+              <input type="number" class="form-control" name="prize_{{pid}}" value="0" min="0" step="0.01">
+            </div>
           </div>
         {% endfor %}
       </div>
