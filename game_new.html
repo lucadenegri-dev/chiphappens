@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="h4 mb-3"><i class="bi bi-plus-circle me-2 text-primary"></i>Nuova partita</h2>
+
+<form method="post" class="card card-lift">
+  {{ form.hidden_tag() }}
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-12 col-md-4">
+        <label class="form-label">Data</label>
+        {{ form.date(class='form-control', placeholder='YYYY-MM-DD') }}
+        <div class="form-text">Lascia vuoto per usare la data di oggi.</div>
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label">Buy-in (€)</label>
+        {{ form.buy_in(class='form-control', step='0.01', min='0.01', required=True) }}
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <h5 class="h6 text-body-secondary mb-2">Seleziona partecipanti</h5>
+      <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2">
+        {% for pid, name in form.participants.choices %}
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="participants" id="p{{pid}}" value="{{pid}}">
+              <label class="form-check-label" for="p{{pid}}">{{ name }}</label>
+            </div>
+            <div class="input-group input-group-sm mt-1">
+              <span class="input-group-text">Rebuy</span>
+              <input type="number" class="form-control" name="rebuy_{{pid}}" value="0" min="0" step="1">
+            </div>
+            <!-- NUOVO: campo per la vincita manuale -->
+            <div class="input-group input-group-sm mt-1">
+              <span class="input-group-text">Vincita €</span>
+              <input type="number" class="form-control" name="prize_{{pid}}" value="0" min="0" step="0.01">
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <label class="form-label">Ordine di arrivo</label>
+      <ul id="orderList" class="list-group mb-2"></ul>
+      <input type="hidden" name="positions" id="positions">
+      <div class="form-text">Trascina i nomi per impostare l’ordine (1° in cima).</div>
+    </div>
+
+    <div class="mt-4 d-flex align-items-center gap-3 flex-wrap">
+      <span class="badge rounded-pill bg-info-subtle text-info-emphasis" id="entriesBadge" title="Partecipanti + Rebuy totali">Entrate totali: 0</span>
+      <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis" id="prizeBadge" title="Entrate totali × Buy-in">Montepremi: €0.00</span>
+    </div>
+  </div>
+
+  <div class="card-footer d-flex gap-2 justify-content-end">
+    <a href="{{ url_for('games') }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Annulla</a>
+    <button class="btn btn-success"><i class="bi bi-check2-circle"></i> Crea partita</button>
+  </div>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+(function () {
+  const orderList   = document.getElementById('orderList');
+  const positionsEl = document.getElementById('positions');
+  const formEl      = document.querySelector('form');
+  const buyInEl     = document.querySelector('input[name="{{ form.buy_in.name }}"]');
+  const entriesBadge= document.getElementById('entriesBadge');
+  const prizeBadge  = document.getElementById('prizeBadge');
+
+  function getAllParticipantCheckboxes() {
+    return Array.from(document.querySelectorAll('input[type="checkbox"][name="participants"]'));
+  }
+  function getLabelForCheckbox(cb) {
+    const label = document.querySelector('label[for="' + cb.id + '"]');
+    return label ? label.textContent.trim() : cb.value;
+  }
+  function updatePositionsHidden() {
+    const ids = Array.from(orderList.querySelectorAll('li')).map(li => li.dataset.id);
+    positionsEl.value = ids.join(',');
+  }
+  function syncOrderListFromChecked() {
+    const checked = getAllParticipantCheckboxes().filter(cb => cb.checked);
+    const presentIds = new Set(Array.from(orderList.querySelectorAll('li')).map(li => li.dataset.id));
+    checked.forEach(cb => {
+      if (!presentIds.has(cb.value)) {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex align-items-center justify-content-between';
+        li.dataset.id = cb.value;
+        li.innerHTML = `
+          <span class="handle me-2" title="Trascina">⠿</span>
+          <span class="flex-grow-1">${getLabelForCheckbox(cb)}</span>
+          <span class="badge bg-secondary-subtle text-secondary-emphasis">drag</span>
+        `;
+        orderList.appendChild(li);
+      }
+    });
+    Array.from(orderList.querySelectorAll('li')).forEach(li => {
+      const id = li.dataset.id;
+      const stillChecked = checked.some(cb => cb.value === id);
+      if (!stillChecked) li.remove();
+    });
+    updatePositionsHidden();
+    updateBadges();
+  }
+  function updateBadges() {
+    const selected = getAllParticipantCheckboxes().filter(cb => cb.checked).map(cb => cb.value);
+    let totalRebuys = 0;
+    selected.forEach(id => {
+      const rebuyInput = document.querySelector('input[name="rebuy_' + id + '"]');
+      const v = rebuyInput && rebuyInput.value !== '' ? parseInt(rebuyInput.value, 10) : 0;
+      totalRebuys += isNaN(v) || v < 0 ? 0 : v;
+    });
+    const entries = selected.length + totalRebuys;
+    const buyIn = parseFloat(buyInEl && buyInEl.value ? buyInEl.value : '0') || 0;
+    const prize = entries * buyIn;
+    entriesBadge.textContent = 'Entrate totali: ' + entries;
+    prizeBadge.textContent   = 'Montepremi: €' + prize.toFixed(2);
+  }
+  Sortable.create(orderList, { handle: '.handle', animation: 150, onSort: updatePositionsHidden });
+  getAllParticipantCheckboxes().forEach(cb => cb.addEventListener('change', syncOrderListFromChecked));
+  document.addEventListener('input', e => {
+    if (e.target?.name?.startsWith('rebuy_') || e.target === buyInEl) updateBadges();
+  });
+  formEl.addEventListener('submit', function (e) {
+    const selectedCbs = getAllParticipantCheckboxes().filter(cb => cb.checked);
+    const selectedIds = new Set(selectedCbs.map(cb => cb.value));
+    const orderedIds  = positionsEl.value.split(',').filter(Boolean);
+    if (selectedIds.size < 2) { e.preventDefault(); alert('Seleziona almeno due partecipanti.'); return; }
+    if (orderedIds.length !== selectedIds.size) { e.preventDefault(); alert('L’ordine deve includere tutti i partecipanti.'); return; }
+    for (const id of orderedIds) if (!selectedIds.has(id)) { e.preventDefault(); alert('L’ordine contiene un giocatore non selezionato.'); return; }
+  });
+  syncOrderListFromChecked();
+})();
+</script>
+{% endblock %}

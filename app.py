@@ -13,7 +13,7 @@ from config import Config
 from models import db, Player, Game, Result
 from forms import PlayerForm, GameCreateForm, LoginForm
 from auth import AdminUser
-from scoring import compute_points_table, default_payouts, compute_payouts
+from scoring import compute_points_table
 
 
 def create_app(test_config=None):
@@ -111,7 +111,7 @@ def create_app(test_config=None):
         games = Game.query.order_by(Game.date.desc()).all()
         return render_template("games.html", games=games)
 
-    @app.route("/games/new", methods=["GET","POST"])
+    @app.route("/games/new", methods=["GET", "POST"])
     @login_required
     def game_new():
         form = GameCreateForm()
@@ -132,13 +132,30 @@ def create_app(test_config=None):
             positions_raw = request.form.get("positions", "").strip()
             positions = [int(x) for x in positions_raw.split(",") if x.strip()]
 
-            # Rebys dal POST (rebuy_<player_id>), sanificati >=0
+            # Rebuy dal POST (rebuy_<player_id>), sanificati >=0
             rebuy_map = {}
             for k, v in request.form.items():
                 if k.startswith("rebuy_"):
                     try:
                         pid = int(k.split("_", 1)[1])
                         rebuy_map[pid] = max(int(v), 0) if v not in (None, "") else 0
+                    except Exception:
+                        pass
+
+            # NUOVO: premi inseriti manualmente (vincita lorda per ciascun giocatore)
+            prize_map = {}
+            for k, v in request.form.items():
+                if k.startswith("prize_"):
+                    try:
+                        pid = int(k.split("_", 1)[1])
+                        if v in (None, ""):
+                            amount = 0.0
+                        else:
+                            # supporta eventuali virgole decimali
+                            amount = float(str(v).replace(",", "."))
+                            if amount < 0:
+                                amount = 0.0
+                        prize_map[pid] = amount
                     except Exception:
                         pass
 
@@ -177,21 +194,32 @@ def create_app(test_config=None):
                 flash("Entrate totali nulle: verifica i partecipanti.", "danger")
                 return render_template("game_new.html", form=form)
 
+            # Controllo "soft" coerenza tra vincite inserite e montepremi
+            total_manual_prizes = sum(prize_map.get(pid, 0.0) for pid in selected)
+            if round(total_manual_prizes, 2) != round(prize_pool, 2):
+                flash(
+                    f"Attenzione: la somma delle vincite inserite (€{total_manual_prizes:.2f}) "
+                    f"non coincide con il montepremi calcolato (€{prize_pool:.2f}).",
+                    "warning"
+                )
+
             # 4) Crea Game solo dopo validazioni
             g = Game(date=date, buy_in=buy_in)
             db.session.add(g)
             db.session.flush()  # ottieni g.id
 
-            # Punteggi/payout
+            # Punteggi (tabella punti ancora automatica)
             points_table = compute_points_table(total_entries)
-            payouts = compute_payouts(total_entries, prize_pool)
 
             # Persisti risultati in base all’ordine (1° in testa)
             for rank_index, player_id in enumerate(positions, start=1):
                 player_rebuys = rebuy_map.get(player_id, 0)
                 points = max(points_table - (rank_index - 1), 0)
                 buy_cost = (1 + player_rebuys) * buy_in
-                prize = payouts[rank_index - 1] if rank_index <= len(payouts) else 0.0
+
+                # Vincita lorda inserita manualmente per quel giocatore
+                prize = float(prize_map.get(player_id, 0.0))
+
                 cash_delta = prize - buy_cost
 
                 r = Result(
